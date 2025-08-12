@@ -1,0 +1,21 @@
+{
+  "ai_settings": {
+    "openai_model": "gpt-3.5-turbo",
+    "max_tokens": 500,
+    "temperature": 0.1,
+    "confidence_threshold": 0.7
+  },
+  "agent_priorities": [
+    "LLM_Extractor",
+    "Pattern_Learner",
+    "Adaptive_Selector",
+    "NLP_Enhanced",
+    "Context_Aware"
+  ],
+  "learning_settings": {
+    "enable_pattern_learning": true,
+    "min_confidence_for_learning": 0.8,
+    "max_patterns_per_site": 10,
+    "pattern_decay_days": 30
+  }
+}

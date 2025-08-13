@@ -4,18 +4,14 @@ Scraper Modules
 
 This package contains various scraper implementations:
 - cashback_scraper: Core scraping framework
-- production_scraper: Production-ready scraper with AI
-- token_optimized_scraper: Advanced scraper with token management
-- ai_enhanced_scraper: AI-powered scraper with agent orchestration
+- token_optimized_scraper_v2: Advanced AI scraper with competitive intelligence and token management
 """
 
 from .cashback_scraper import CashbackScraperFactory, CashbackAggregator
-from .production_scraper import SimpleAIScraper
-from .token_optimized_scraper import TokenOptimizedAIScraper
+from .token_optimized_scraper_v2 import TokenOptimizedAIScraper
 
 __all__ = [
     'CashbackScraperFactory',
     'CashbackAggregator', 
-    'SimpleAIScraper',
     'TokenOptimizedAIScraper'
 ]

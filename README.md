@@ -1,14 +1,34 @@
+pokitpal-competitive-scraper/
+├── src/
+│   ├── scrapers/
+│   │   ├── token_optimized_scraper_v2.py  # Main intelligence scraper
+│   │   └── __init__.py
+│   └── ai_agents/                         # AI enhancement modules
+├── data/                                  # Output files (CSV/Excel)
+├── examples/                              # Demo scripts
+├── tests/                                 # Environment tests
+├── config/                                # Configuration files
+├── logs/                                  # Scraper logs
+├── main.py                                # Main entry point
+└── requirements.txt                       # Dependencies
+scraper = TokenOptimizedAIScraper()
+
+
 # Pokitpal Competitive Intelligence Scraper
 
 AI-enhanced scraper for competitive intelligence analysis of cashback platforms. Built specifically for Pokitpal to analyze competitors like ShopBack and CashRewards.
 
+---
+**Author:** jekportillano-da
+---
+
 ## 🎯 Features
 
-- **🧠 AI-Powered Analysis**: Three intelligence levels (Basic, Standard, Comprehensive)
-- **🔍 Competitive Intelligence**: Pokitpal-focused competitor analysis
-- **💰 Cost Control**: Token budget management and optimization
-- **📊 Excel-Ready Output**: CSV and Excel files for business analysis
-- **⚡ Smart Content Optimization**: Minimizes API costs while maximizing insights
+- **AI-Powered Analysis**: Three intelligence levels (Basic, Standard, Comprehensive)
+- **Competitive Intelligence**: Pokitpal-focused competitor analysis
+- **Cost Control**: Token budget management and optimization
+- **Excel-Ready Output**: CSV and Excel files for business analysis
+- **Smart Content Optimization**: Minimizes API costs while maximizing insights
 
 ## 🚀 Quick Start
 
@@ -29,57 +49,61 @@ AI-enhanced scraper for competitive intelligence analysis of cashback platforms.
    ```
 
 4. **Choose Intelligence Level**
-   - 🔸 **Basic** (~$0.0008/page): Simple extraction with threat assessment
-   - 🔹 **Standard** (~$0.0015/page): Business insights + competitive recommendations  
-   - 🔷 **Comprehensive** (~$0.0035/page): Full competitive intelligence analysis
+   - Basic: Simple extraction with threat assessment
+   - Standard: Business insights + competitive recommendations
+   - Comprehensive: Full competitive intelligence analysis
 
-## 📊 Intelligence Levels
+## Intelligence Levels
 
-### 🔸 Basic Intelligence
+### Basic Intelligence
 - Merchant name and cashback rates
 - Competitive threat assessment (High/Medium/Low)
 - Simple CSV output
 
-### 🔹 Standard Intelligence (Recommended)
+### Standard Intelligence (Recommended)
 - All Basic features PLUS:
 - Market position analysis
 - Pokitpal-specific opportunities
 - Strategic recommendations
 - Enhanced CSV with business metrics
 
-### 🔷 Comprehensive Intelligence
+### Comprehensive Intelligence
 - All Standard features PLUS:
 - Full competitive positioning analysis
 - Market gaps Pokitpal can exploit
 - Partnership vs competition strategies
 - Excel file with multiple analysis sheets
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
-pokitpal-competitive-scraper/
+project-root/
 ├── src/
 │   ├── scrapers/
-│   │   ├── token_optimized_scraper_v2.py  # Main intelligence scraper
-│   │   └── __init__.py
-│   └── ai_agents/                         # AI enhancement modules
-├── data/                                  # Output files (CSV/Excel)
-├── examples/                              # Demo scripts
-├── tests/                                 # Environment tests
-├── config/                                # Configuration files
-├── logs/                                  # Scraper logs
-├── main.py                                # Main entry point
-└── requirements.txt                       # Dependencies
+│   └── ai_agents/
+├── data/
+│   └── README.md
+├── examples/
+├── tests/
+├── config/
+├── logs/ (empty or .gitkeep)
+├── main.py
+├── run_scraper.py
+├── requirements.txt
+├── README.md
+├── LICENSE
+├── .env.example
+└── ...other docs
 ```
 
-## 🎯 Competitive Intelligence Output
+## Competitive Intelligence Output
 
 ### Key Analysis Fields:
-- **Threat Assessment**: How dangerous each competitor is to Pokitpal
-- **Market Opportunities**: Weaknesses Pokitpal can exploit
-- **Strategic Recommendations**: Pokitpal-specific action items
-- **Differentiation Opportunities**: Ways to stand out from competitors
-- **Response Priority**: Urgency level for competitive response
+- Threat Assessment: How dangerous each competitor is to Pokitpal
+- Market Opportunities: Weaknesses Pokitpal can exploit
+- Strategic Recommendations: Pokitpal-specific action items
+- Differentiation Opportunities: Ways to stand out from competitors
+- Response Priority: Urgency level for competitive response
 
 ### Sample Output:
 ```
@@ -91,14 +115,14 @@ Competitor: Hotels.com
 └── Strategy: Differentiate with higher rates
 ```
 
-## 💰 Cost Management
+## Cost Management
 
-- **Token Budget Control**: Set spending limits upfront
-- **Real-time Cost Tracking**: Monitor expenses during scraping
-- **Optimized Prompts**: Minimize tokens while maximizing insights
-- **Intelligent Content Parsing**: Extract only relevant information
+- Token Budget Control: Set spending limits upfront
+- Real-time Cost Tracking: Monitor expenses during scraping
+- Optimized Prompts: Minimize tokens while maximizing insights
+- Intelligent Content Parsing: Extract only relevant information
 
-## 📈 Business Intelligence Features
+## Business Intelligence Features
 
 ### Competitive Analysis:
 - Market positioning assessment
@@ -112,19 +136,19 @@ Competitor: Hotels.com
 - Market share vulnerability evaluation
 - Recommended response strategies
 
-## 🛠️ Development Setup
+## Development Setup
 
 1. **Clone Repository**
    ```bash
    git clone <repository-url>
-   cd pokitpal-competitive-scraper
+   cd project-root
    ```
 
 2. **Create Virtual Environment**
    ```bash
    python -m venv .venv
-   source .venv/bin/activate  # Linux/Mac
-   .venv\Scripts\activate     # Windows
+   .venv\Scripts\Activate.ps1     # Windows
+   source .venv/bin/activate       # Linux/Mac
    ```
 
 3. **Install Dependencies**
@@ -137,13 +161,13 @@ Competitor: Hotels.com
    python tests/test_environment.py
    ```
 
-## 📊 Usage Examples
+## Usage Examples
 
 ### Basic Competitive Analysis
 ```python
 from src.scrapers.token_optimized_scraper_v2 import TokenOptimizedAIScraper
 
-scraper = TokenOptimizedAIScraper()
+
 
 # Analyze competitors with Standard intelligence
 results = scraper.scrape_with_intelligence_level(
@@ -162,7 +186,7 @@ scraper.save_intelligence_results(results, "competitors", "standard")
 python examples/competitive_intelligence_demo.py
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables (.env)
 ```
@@ -174,7 +198,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 - Modify analysis depth in scraper configuration
 - Customize competitive analysis prompts
 
-## 📁 Output Files
+## Output Files
 
 ### CSV Files (Excel-ready)
 - `data/competitors_standard_YYYYMMDD_HHMMSS.csv`
@@ -186,7 +210,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 - Professional formatting for presentations
 - Advanced competitive metrics
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/enhancement`)
@@ -194,16 +218,16 @@ OPENAI_API_KEY=your_openai_api_key_here
 4. Push to branch (`git push origin feature/enhancement`)
 5. Create Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see LICENSE file for details.
 
-## 🆘 Support
+## Support
 
-- **Environment Issues**: Run `python tests/test_environment.py`
-- **API Problems**: Check OpenAI API key in `.env` file
-- **Output Questions**: See `data/README.md` for file format details
+- Environment Issues: Run `python tests/test_environment.py`
+- API Problems: Check OpenAI API key in `.env` file
+- Output Questions: See `data/README.md` for file format details
 
 ---
 
-Built with ❤️ for Pokitpal's competitive intelligence needs.
+Built for Pokitpal's competitive intelligence needs.

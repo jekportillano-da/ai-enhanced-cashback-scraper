@@ -4,6 +4,8 @@ Pokitpal Competitive Intelligence Scraper Demo
 ==============================================
 
 Simple demo showing competitive intelligence capabilities.
+
+NEW: Comprehensive analysis now uses GPT-4o for superior insights!
 """
 
 import sys

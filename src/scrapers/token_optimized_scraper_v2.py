@@ -4,9 +4,11 @@ Token-Optimized AI Scraper with Intelligence Levels
 ===================================================
 
 Enhanced version with multiple intelligence levels:
-- Basic: Simple cashback extraction
-- Standard: Business insights and recommendations  
-- Comprehensive: Full business intelligence analysis
+- Basic: Simple cashback extraction (GPT-3.5-turbo)
+- Standard: Business insights and recommendations (GPT-3.5-turbo)
+- Comprehensive: Full business intelligence analysis (GPT-4o)
+
+The comprehensive level automatically uses GPT-4o for superior analysis quality.
 """
 
 import requests
@@ -45,26 +47,60 @@ class TokenOptimizedAIScraper:
         self.token_costs = 0.0
         self.max_input_tokens = 3000
         
-        # Intelligence levels configuration
+        # Error tracking for monitoring
+        self.error_stats = {
+            'skipped_urls': 0,
+            'filtered_urls': 0,
+            '404_errors': 0,
+            '403_errors': 0,
+            '500_errors': 0,
+            'timeout_errors': 0,
+            'connection_errors': 0,
+            'successful_extractions': 0,
+            'failed_extractions': 0
+        }
+        
+        # Intelligence levels configuration with model flexibility
         self.intelligence_levels = {
             "basic": {
                 "max_tokens": 150,
                 "temperature": 0.1,
-                "analysis_depth": "simple",
-                "estimated_cost_per_call": 0.0008
+                "analysis_depth": "simple"
             },
             "standard": {
                 "max_tokens": 500,
                 "temperature": 0.2,
-                "analysis_depth": "moderate",
-                "estimated_cost_per_call": 0.0015
+                "analysis_depth": "moderate"
             },
             "comprehensive": {
-                "max_tokens": 1500,
-                "temperature": 0.2,
-                "analysis_depth": "detailed",
-                "estimated_cost_per_call": 0.0035
+                "max_tokens": 2000,
+                "temperature": 0.15,
+                "analysis_depth": "detailed"
             }
+        }
+        
+        # Model pricing configuration
+        self.model_pricing = {
+            "gpt-3.5-turbo": {
+                "input_cost_per_1k": 0.0015,
+                "output_cost_per_1k": 0.002,
+                "name": "GPT-3.5 Turbo"
+            },
+            "gpt-4o": {
+                "input_cost_per_1k": 0.005,
+                "output_cost_per_1k": 0.015,
+                "name": "GPT-4o"
+            }
+        }
+        
+        # Combined cost estimates (level + model combinations)
+        self.cost_estimates = {
+            ("basic", "gpt-3.5-turbo"): 0.0008,
+            ("basic", "gpt-4o"): 0.008,
+            ("standard", "gpt-3.5-turbo"): 0.0015,
+            ("standard", "gpt-4o"): 0.012,
+            ("comprehensive", "gpt-3.5-turbo"): 0.0035,
+            ("comprehensive", "gpt-4o"): 0.015
         }
     
     def setup_logging(self):
@@ -93,6 +129,25 @@ class TokenOptimizedAIScraper:
             
         except Exception as e:
             self.logger.warning(f"AI setup failed: {e}")
+    
+    def get_cost_estimate(self, intelligence_level, model_name):
+        """Get cost estimate for intelligence level + model combination"""
+        return self.cost_estimates.get((intelligence_level, model_name), 0.001)
+    
+    def get_available_models(self):
+        """Get list of available AI models"""
+        return list(self.model_pricing.keys())
+    
+    def get_model_info(self, model_name):
+        """Get model information including pricing"""
+        return self.model_pricing.get(model_name, self.model_pricing["gpt-3.5-turbo"])
+    
+    def calculate_dynamic_cost(self, intelligence_level, model_name, input_tokens, output_tokens):
+        """Calculate actual cost based on token usage"""
+        model_info = self.get_model_info(model_name)
+        input_cost = (input_tokens * model_info["input_cost_per_1k"]) / 1000
+        output_cost = (output_tokens * model_info["output_cost_per_1k"]) / 1000
+        return input_cost + output_cost
     
     def count_tokens(self, text):
         """Count tokens in text"""
@@ -203,8 +258,8 @@ Return detailed competitive analysis JSON:
         
         return prompt
     
-    def ai_extract(self, html_content, url, intelligence_level="standard"):
-        """Use AI to extract merchant data with intelligence levels"""
+    def ai_extract(self, html_content, url, intelligence_level="standard", model_name="gpt-3.5-turbo"):
+        """Use AI to extract merchant data with intelligence levels and model selection"""
         if not self.openai_client:
             return None
         
@@ -229,11 +284,13 @@ Return detailed competitive analysis JSON:
             # Count total input tokens
             total_input_tokens = self.count_tokens(system_message + prompt)
             
-            self.logger.info(f"AI extraction ({intelligence_level}) - Input tokens: {total_input_tokens}")
+            # Use the selected model
+            model_info = self.get_model_info(model_name)
+            self.logger.info(f"AI extraction ({intelligence_level}) - Using {model_info['name']} - Input tokens: {total_input_tokens}")
             
-            # Make API call with intelligence level settings
+            # Make API call with selected model and intelligence level settings
             response = self.openai_client.chat.completions.create(
-                model=self.model_name,
+                model=model_name,
                 messages=[
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": prompt}
@@ -245,7 +302,9 @@ Return detailed competitive analysis JSON:
             # Track usage
             usage = response.usage
             total_tokens = usage.total_tokens
-            cost = (usage.prompt_tokens * 0.0015 + usage.completion_tokens * 0.002) / 1000
+            
+            # Calculate cost using dynamic pricing
+            cost = self.calculate_dynamic_cost(intelligence_level, model_name, usage.prompt_tokens, usage.completion_tokens)
             
             self.total_tokens_used += total_tokens
             self.total_api_calls += 1
@@ -366,40 +425,191 @@ Return detailed competitive analysis JSON:
         
         return self.parse_standard_response(ai_content, url, tokens_used, cost)
     
-    def scrape_page(self, url, intelligence_level="standard"):
-        """Scrape a single page with specified intelligence level"""
-        try:
-            self.logger.info(f"Scraping ({intelligence_level}): {url}")
-            response = self.session.get(url, timeout=30)
-            response.raise_for_status()
-            
-            result = self.ai_extract(response.text, url, intelligence_level)
-            
-            if result:
-                merchant = result.get('merchant') or result.get('basic_info', {}).get('merchant_name', 'Unknown')
-                tokens = result.get('tokens_used') or result.get('extraction_metadata', {}).get('tokens_used', 0)
-                cost = result.get('cost') or result.get('extraction_metadata', {}).get('cost', 0)
-                
-                self.logger.info(f"✅ {intelligence_level.title()}: {merchant} [{tokens} tokens, ${cost:.4f}]")
-                return result
-            else:
-                self.logger.warning(f"No data extracted from {url}")
-                return None
-                
-        except Exception as e:
-            self.logger.error(f"Error scraping {url}: {e}")
-            return None
-    
-    def scrape_with_intelligence_level(self, site_name, intelligence_level="standard", max_pages=10, token_budget=None):
-        """Scrape with specified intelligence level and budget control"""
+    def validate_url_batch(self, urls, max_workers=10):
+        """Quickly validate URLs in parallel to filter out broken ones before scraping"""
+        valid_urls = []
         
-        level_config = self.intelligence_levels.get(intelligence_level, self.intelligence_levels["standard"])
-        estimated_cost_per_page = level_config["estimated_cost_per_call"]
+        def check_url(url):
+            """Quick check if URL is accessible"""
+            try:
+                # Use HEAD request for faster checking
+                response = self.session.head(url, timeout=5, allow_redirects=True)
+                if response.status_code == 200:
+                    return url
+            except:
+                pass
+            return None
+        
+        self.logger.info(f"🔍 Pre-validating {len(urls)} URLs to filter out broken ones...")
+        
+        # Use ThreadPoolExecutor for parallel validation
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_url = {executor.submit(check_url, url): url for url in urls}
+            
+            for i, future in enumerate(as_completed(future_to_url), 1):
+                if i % 50 == 0 or i == len(urls):
+                    self.logger.info(f"   Validated {i}/{len(urls)} URLs...")
+                    
+                result = future.result()
+                if result:
+                    valid_urls.append(result)
+        
+        self.logger.info(f"✅ Found {len(valid_urls)}/{len(urls)} valid URLs ({(len(valid_urls)/len(urls)*100):.1f}% success rate)")
+        return valid_urls
+
+    def should_skip_url(self, url):
+        """Check if URL should be skipped based on patterns that commonly fail"""
+        skip_patterns = [
+            '/notfound',
+            '/error',
+            '/404',
+            '/maintenance',
+            '.xml',
+            '.css',
+            '.js',
+            '.pdf',
+            '.jpg',
+            '.png',
+            '.gif',
+            '/api/',
+            '/admin/',
+            '/login',
+            '/logout',
+            '/search?',
+            '/category/',
+            '/tag/',
+            '/page/',
+            'javascript:',
+            'mailto:',
+            'tel:',
+            '#'
+        ]
+        
+        url_lower = url.lower()
+        
+        # Check for skip patterns
+        for pattern in skip_patterns:
+            if pattern in url_lower:
+                return True
+        
+        # Skip URLs that are too long (often dynamic/problematic)
+        if len(url) > 200:
+            return True
+            
+        # Skip URLs with too many query parameters
+        if url.count('?') > 1 or url.count('&') > 5:
+            return True
+            
+        return False
+    
+    def scrape_page(self, url, intelligence_level="standard", model_name="gpt-3.5-turbo", max_retries=2):
+        """Scrape a single page with specified intelligence level and model"""
+        
+        for attempt in range(max_retries + 1):
+            try:
+                if attempt > 0:
+                    self.logger.info(f"Retry {attempt}/{max_retries} for {url}")
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                else:
+                    self.logger.info(f"Scraping ({intelligence_level}): {url}")
+                
+                # Get the response but don't raise on HTTP errors yet
+                response = self.session.get(url, timeout=30)
+                
+                # Check for common errors that should skip AI processing
+                if response.status_code == 404:
+                    self.logger.warning(f"⚠️ Page not found (404): {url} - Skipping AI analysis")
+                    self.error_stats['404_errors'] += 1
+                    return None
+                elif response.status_code == 403:
+                    self.logger.warning(f"⚠️ Access forbidden (403): {url} - Skipping AI analysis")
+                    self.error_stats['403_errors'] += 1
+                    return None
+                elif response.status_code == 500:
+                    self.logger.warning(f"⚠️ Server error (500): {url} - Retrying..." if attempt < max_retries else f"⚠️ Server error (500): {url} - Skipping after retries")
+                    self.error_stats['500_errors'] += 1
+                    if attempt < max_retries:
+                        continue
+                    return None
+                elif response.status_code == 429:
+                    self.logger.warning(f"⚠️ Rate limited (429): {url} - Retrying..." if attempt < max_retries else f"⚠️ Rate limited (429): {url} - Skipping after retries")
+                    if attempt < max_retries:
+                        time.sleep(5)  # Extra delay for rate limiting
+                        continue
+                    return None
+                elif response.status_code != 200:
+                    self.logger.warning(f"⚠️ HTTP {response.status_code}: {url} - Skipping AI analysis")
+                    return None
+                
+                # Check if response has meaningful content
+                if len(response.text.strip()) < 100:
+                    self.logger.warning(f"⚠️ Response too short ({len(response.text)} chars): {url} - Skipping AI analysis")
+                    return None
+                
+                # Check for common error pages in content
+                    error_indicators = [
+                        '404', 'not found', 'page not found', 'error occurred', 'access denied',
+                        'store unavailable', 'not available', 'no longer available', 'currently unavailable',
+                        'this store is not available', 'store not found', 'shop unavailable', 'shop not found',
+                        'no longer exists', 'no longer active', 'inactive store', 'inactive shop', 'closed store', 'closed shop'
+                    ]
+                    content_lower = response.text.lower()
+                    if any(indicator in content_lower for indicator in error_indicators):
+                        self.logger.warning(f"⚠️ Error page detected: {url} - Skipping AI analysis")
+                        return None
+                
+                # Only call AI if we have valid content
+                result = self.ai_extract(response.text, url, intelligence_level, model_name)
+                
+                if result:
+                    merchant = result.get('merchant') or result.get('basic_info', {}).get('merchant_name', 'Unknown')
+                    tokens = result.get('tokens_used') or result.get('extraction_metadata', {}).get('tokens_used', 0)
+                    cost = result.get('cost') or result.get('extraction_metadata', {}).get('cost', 0)
+                    
+                    self.error_stats['successful_extractions'] += 1
+                    self.logger.info(f"✅ {intelligence_level.title()}: {merchant} [{tokens} tokens, ${cost:.4f}]")
+                    return result
+                else:
+                    self.error_stats['failed_extractions'] += 1
+                    self.logger.warning(f"⚠️ No data extracted from {url}")
+                    return None
+                    
+            except requests.exceptions.Timeout:
+                self.error_stats['timeout_errors'] += 1
+                self.logger.warning(f"⚠️ Timeout accessing {url}" + (" - Retrying..." if attempt < max_retries else " - Skipping after retries"))
+                if attempt >= max_retries:
+                    return None
+                continue
+            except requests.exceptions.ConnectionError:
+                self.error_stats['connection_errors'] += 1
+                self.logger.warning(f"⚠️ Connection error accessing {url}" + (" - Retrying..." if attempt < max_retries else " - Skipping after retries"))
+                if attempt >= max_retries:
+                    return None
+                continue
+            except requests.exceptions.RequestException as e:
+                self.logger.warning(f"⚠️ Request error accessing {url}: {e}" + (" - Retrying..." if attempt < max_retries else " - Skipping after retries"))
+                if attempt >= max_retries:
+                    return None
+                continue
+            except Exception as e:
+                self.logger.error(f"❌ Unexpected error scraping {url}: {e}")
+                return None
+        
+        return None
+    
+    def scrape_with_intelligence_level(self, site_name, intelligence_level="standard", model_name="gpt-3.5-turbo", max_pages=10, token_budget=None):
+        """Scrape with specified intelligence level, model, and budget control"""
+        
+        # Get cost estimate for the level+model combination
+        estimated_cost_per_page = self.get_cost_estimate(intelligence_level, model_name)
         
         if token_budget:
             estimated_pages = int(token_budget / (estimated_cost_per_page * 1000))  # Convert to token count
             max_pages = min(max_pages, estimated_pages)
+            model_info = self.get_model_info(model_name)
             self.logger.info(f"🎯 Intelligence Level: {intelligence_level.title()}")
+            self.logger.info(f"🤖 AI Model: {model_info['name']}")
             self.logger.info(f"💰 Budget: {token_budget} tokens (~${estimated_cost_per_page * max_pages:.3f})")
             self.logger.info(f"📊 Estimated pages: {max_pages}")
         
@@ -428,27 +638,47 @@ Return detailed competitive analysis JSON:
             
             self.logger.info(f"Found {len(urls)} URLs, {len(store_urls)} store URLs")
             
-            # Limit URLs
-            selected_urls = store_urls[:max_pages] if store_urls else urls[:max_pages]
+            # Use all available URLs - prioritize store URLs but include all for backup
+            # This ensures we can continue until target is reached regardless of errors
+            all_candidate_urls = store_urls + [url for url in urls if url not in store_urls]
+            
+            # First pass: filter out obviously bad URLs
+            filtered_urls = [url for url in all_candidate_urls if not self.should_skip_url(url)]
+            self.logger.info(f"📋 After pattern filtering: {len(filtered_urls)} candidate URLs")
+            
+            # Second pass: validate URLs are actually accessible
+            selected_urls = self.validate_url_batch(filtered_urls)
+            
+            self.logger.info(f"🎯 Ready to scrape {len(selected_urls)} validated URLs (will continue until {max_pages} successful results)")
             
         except Exception as e:
             self.logger.error(f"Error fetching sitemap: {e}")
             return []
         
-        # Scrape pages
+        # Scrape pages until we get target number of results
         results = []
         tokens_used_session = 0
+        processed_urls = 0
+        target_results = max_pages
         
-        self.logger.info(f"Scraping {len(selected_urls)} pages with {intelligence_level} intelligence...")
+        self.logger.info(f"🎯 Target: {target_results} successful extractions with {intelligence_level} intelligence...")
+        self.logger.info(f"📝 Will process up to {len(selected_urls)} URLs until target is reached")
         
-        for i, url in enumerate(selected_urls, 1):
-            # Check budget
-            if token_budget and tokens_used_session >= token_budget:
-                self.logger.warning(f"⚠️ Token budget reached ({tokens_used_session}/{token_budget}). Stopping.")
+        for url in selected_urls:
+            # Check if we've reached our target
+            if len(results) >= target_results:
+                self.logger.info(f"🎯 Target reached! Got {len(results)}/{target_results} successful extractions")
                 break
             
-            self.logger.info(f"Scraping {i}/{len(selected_urls)}: {url}")
-            result = self.scrape_page(url, intelligence_level)
+            # Check budget
+            if token_budget and tokens_used_session >= token_budget:
+                self.logger.warning(f"⚠️ Token budget reached ({tokens_used_session}/{token_budget}). Stopping with {len(results)}/{target_results} results.")
+                break
+            
+            processed_urls += 1
+            
+            self.logger.info(f"Scraping ({len(results)}/{target_results}): {url}")
+            result = self.scrape_page(url, intelligence_level, model_name)
             
             if result:
                 results.append(result)
@@ -460,10 +690,62 @@ Return detailed competitive analysis JSON:
                 # Brief pause between requests
                 time.sleep(1)
         
-        self.logger.info(f"🎉 {site_name} scraping complete! Found {len(results)} offers")
+        # Check if we reached target or ran out of URLs
+        if len(results) >= target_results:
+            self.logger.info(f"✅ {site_name} scraping complete! Successfully reached target: {len(results)}/{target_results} results")
+        elif processed_urls >= len(selected_urls):
+            self.logger.warning(f"⚠️ {site_name} scraping complete but target not reached. Got {len(results)}/{target_results} results after processing all {processed_urls} available URLs")
+        else:
+            self.logger.info(f"🎉 {site_name} scraping stopped. Found {len(results)}/{target_results} results after processing {processed_urls} URLs")
+            
+        # Show efficiency stats
+        if processed_urls > 0:
+            success_rate = (len(results) / processed_urls) * 100
+            self.logger.info(f"📈 Processing efficiency: {success_rate:.1f}% ({len(results)} successes out of {processed_urls} attempts)")
+        
         self.logger.info(f"💰 Session tokens used: {tokens_used_session}")
         
+        # Display error statistics
+        self.display_error_stats(target_results, processed_urls)
+        
         return results
+    
+    def display_error_stats(self, target_results=None, processed_urls=None):
+        """Display error statistics for monitoring"""
+        stats = self.error_stats
+        total_errors = sum([stats['filtered_urls'], stats['404_errors'], stats['403_errors'], 
+                           stats['500_errors'], stats['timeout_errors'], stats['connection_errors']])
+        
+        if processed_urls and processed_urls > 0:
+            self.logger.info("📊 Scraping Efficiency:")
+            self.logger.info(f"   🎯 Target results: {target_results}")
+            self.logger.info(f"   ✅ Successful extractions: {stats['successful_extractions']}")
+            self.logger.info(f"   📄 URLs processed: {processed_urls}")
+            self.logger.info(f"   ⚠️ Total errors skipped: {total_errors}")
+            
+            if target_results:
+                completion_rate = (stats['successful_extractions'] / target_results) * 100
+                self.logger.info(f"   📈 Target completion: {completion_rate:.1f}%")
+            
+            if processed_urls > 0:
+                efficiency = (stats['successful_extractions'] / processed_urls) * 100
+                self.logger.info(f"   ⚡ Processing efficiency: {efficiency:.1f}%")
+            
+            self.logger.info("📊 Error Breakdown:")
+            if stats['filtered_urls'] > 0:
+                self.logger.info(f"   ⏭️ Filtered URLs: {stats['filtered_urls']}")
+            if stats['404_errors'] > 0:
+                self.logger.info(f"   🚫 404 errors: {stats['404_errors']}")
+            if stats['403_errors'] > 0:
+                self.logger.info(f"   🔒 403 errors: {stats['403_errors']}")
+            if stats['500_errors'] > 0:
+                self.logger.info(f"   ⚠️ 500 errors: {stats['500_errors']}")
+            if stats['timeout_errors'] > 0:
+                self.logger.info(f"   ⏰ Timeout errors: {stats['timeout_errors']}")
+            if stats['connection_errors'] > 0:
+                self.logger.info(f"   🔌 Connection errors: {stats['connection_errors']}")
+            if stats['failed_extractions'] > 0:
+                self.logger.info(f"   ❌ Failed extractions: {stats['failed_extractions']}")
     
     def save_intelligence_results(self, results, filename_base, intelligence_level):
         """Save results with intelligence level information in appropriate formats"""

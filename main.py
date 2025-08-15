@@ -87,15 +87,23 @@ def run_optimized_scraper():
         import subprocess
         
         print("\n🧠 Select Intelligence Level:")
-        print("1. 🔸 Basic - Simple extraction (~$0.0008/page)")
-        print("2. 🔹 Standard - Business insights (~$0.0015/page)")
-        print("3. 🔷 Comprehensive - Full analysis (~$0.0035/page)")
+        print("1. 🔸 Basic - Simple extraction")
+        print("2. 🔹 Standard - Business insights") 
+        print("3. 🔷 Comprehensive - Full analysis")
         
         intelligence_choice = input("Enter intelligence level (1-3): ").strip()
         intelligence_levels = {"1": "basic", "2": "standard", "3": "comprehensive"}
         intelligence_level = intelligence_levels.get(intelligence_choice, "standard")
         
-        print(f"\n🎯 Selected: {intelligence_level.title()} Intelligence")
+        print("\n🤖 Select AI Model:")
+        print("1. GPT-3.5 Turbo (Fast & Economical)")
+        print("2. GPT-4o (Superior Quality)")
+        
+        model_choice = input("Enter model choice (1-2): ").strip()
+        models = {"1": "gpt-3.5-turbo", "2": "gpt-4o"}
+        selected_model = models.get(model_choice, "gpt-3.5-turbo")
+        
+        print(f"\n🎯 Selected: {intelligence_level.title()} + {selected_model}")
         print("🚀 Running intelligence levels scraper directly...")
         
         # Run the standalone scraper
@@ -113,19 +121,19 @@ def run_optimized_scraper():
     
     # Intelligence level selection
     print("\n🧠 Select Intelligence Level:")
-    print("1. 🔸 Basic - Simple extraction (~$0.0008/page)")
+    print("1. 🔸 Basic - Simple extraction")
     print("   • Merchant name and cashback rate")
     print("   • Confidence score")
     print("   • Fastest processing")
     print()
-    print("2. 🔹 Standard - Business insights (~$0.0015/page)")
+    print("2. 🔹 Standard - Business insights")
     print("   • Basic extraction PLUS:")
     print("   • Market position analysis")
     print("   • Revenue opportunity assessment") 
     print("   • User experience evaluation")
     print("   • Actionable recommendations")
     print()
-    print("3. 🔷 Comprehensive - Full analysis (~$0.0035/page)")
+    print("3. 🔷 Comprehensive - Full analysis")
     print("   • Standard insights PLUS:")
     print("   • Competitive analysis")
     print("   • Detailed business intelligence")
@@ -137,44 +145,71 @@ def run_optimized_scraper():
     intelligence_levels = {"1": "basic", "2": "standard", "3": "comprehensive"}
     intelligence_level = intelligence_levels.get(intelligence_choice, "standard")
     
-    print(f"\n🎯 Selected: {intelligence_level.title()} Intelligence")
+    # AI Model selection
+    print(f"\n🤖 Select AI Model for {intelligence_level.title()} Analysis:")
+    available_models = scraper.get_available_models()
+    model_options = {}
     
-    # Interactive budget selection based on intelligence level
+    for i, model in enumerate(available_models, 1):
+        model_info = scraper.get_model_info(model)
+        cost_estimate = scraper.get_cost_estimate(intelligence_level, model)
+        print(f"{i}. {model_info['name']} (~${cost_estimate:.4f}/page)")
+        
+        # Add descriptive text
+        if model == "gpt-3.5-turbo":
+            print("   • Fast and cost-effective")
+            print("   • Great for high-volume processing")
+        elif model == "gpt-4o":
+            print("   • Superior analysis quality")
+            print("   • Best for strategic decisions")
+        print()
+        model_options[str(i)] = model
+    
+    model_choice = input(f"Enter model choice (1-{len(available_models)}): ").strip()
+    selected_model = model_options.get(model_choice, "gpt-3.5-turbo")
+    
+    model_info = scraper.get_model_info(selected_model)
+    print(f"\n🎯 Selected: {intelligence_level.title()} Intelligence + {model_info['name']}")
+    
+    # Interactive budget selection based on intelligence level + model
+    cost_per_page = scraper.get_cost_estimate(intelligence_level, selected_model)
+    
+    # Estimate tokens per page based on intelligence level
     level_config = scraper.intelligence_levels[intelligence_level]
-    cost_per_page = level_config["estimated_cost_per_call"]
+    estimated_tokens_per_page = level_config["max_tokens"] + 500  # Add buffer for input tokens
     
-    print(f"\n💰 Select budget (at ~${cost_per_page:.4f} per page):")
-    print(f"1. Small (10 pages - ~${cost_per_page * 10:.3f})")
-    print(f"2. Medium (25 pages - ~${cost_per_page * 25:.3f})")
-    print(f"3. Large (50 pages - ~${cost_per_page * 50:.3f})")
+    print(f"\n💰 Select budget (at ~${cost_per_page:.4f} per page, ~{estimated_tokens_per_page} tokens/page):")
+    print(f"1. Small (5 pages - ~${cost_per_page * 5:.3f}, ~{estimated_tokens_per_page * 5} tokens)")
+    print(f"2. Medium (10 pages - ~${cost_per_page * 10:.3f}, ~{estimated_tokens_per_page * 10} tokens)")
+    print(f"3. Large (20 pages - ~${cost_per_page * 20:.3f}, ~{estimated_tokens_per_page * 20} tokens)")
     print("4. Custom budget")
     print("5. No limit")
     
     choice = input("Enter choice (1-5): ").strip()
     
     if choice == "1":
-        budget = int(cost_per_page * 10 * 1000)  # Convert to tokens
-        max_pages = 10
+        budget = estimated_tokens_per_page * 5
+        max_pages = 5
     elif choice == "2":
-        budget = int(cost_per_page * 25 * 1000)
-        max_pages = 25
+        budget = estimated_tokens_per_page * 10
+        max_pages = 10
     elif choice == "3":
-        budget = int(cost_per_page * 50 * 1000)
-        max_pages = 50
+        budget = estimated_tokens_per_page * 20
+        max_pages = 20
     elif choice == "4":
         try:
             pages = int(input("Enter number of pages: "))
-            budget = int(cost_per_page * pages * 1000)
+            budget = estimated_tokens_per_page * pages
             max_pages = pages
         except ValueError:
-            budget = 2000
-            max_pages = 15
+            budget = estimated_tokens_per_page * 10
+            max_pages = 10
     else:
         budget = None
         max_pages = 30
     
     if budget:
-        print(f"📊 Budget set to {budget} tokens (~${budget * cost_per_page / 1000:.3f})")
+        print(f"📊 Budget set to {budget} tokens (~${cost_per_page * max_pages:.3f})")
     else:
         print("📊 No budget limit set")
     
@@ -192,10 +227,11 @@ def run_optimized_scraper():
     results = []
     
     if site_choice in ["1", "3"]:
-        print(f"\n📊 Scraping ShopBack with {intelligence_level} intelligence...")
+        print(f"\n📊 Scraping ShopBack with {intelligence_level} intelligence + {model_info['name']}...")
         shopback_results = scraper.scrape_with_intelligence_level(
             site_name="shopback", 
             intelligence_level=intelligence_level,
+            model_name=selected_model,
             max_pages=max_pages,
             token_budget=budget//2 if budget and site_choice == "3" else budget
         )
@@ -209,10 +245,11 @@ def run_optimized_scraper():
             scraper.total_tokens_used = 0
             scraper.token_costs = 0.0
         
-        print(f"\n📊 Scraping CashRewards with {intelligence_level} intelligence...")
+        print(f"\n📊 Scraping CashRewards with {intelligence_level} intelligence + {model_info['name']}...")
         cashrewards_results = scraper.scrape_with_intelligence_level(
             site_name="cashrewards",
-            intelligence_level=intelligence_level, 
+            intelligence_level=intelligence_level,
+            model_name=selected_model,
             max_pages=max_pages,
             token_budget=budget//2 if budget and site_choice == "3" else budget
         )
@@ -223,6 +260,7 @@ def run_optimized_scraper():
     # Summary
     print(f"\n✅ Intelligent scraping complete!")
     print(f"🧠 Intelligence Level: {intelligence_level.title()}")
+    print(f"🤖 AI Model: {model_info['name']}")
     print(f"📊 Total results: {len(results)}")
     print(f"💰 Total cost: ${scraper.token_costs:.4f} ({scraper.total_tokens_used} tokens)")
     

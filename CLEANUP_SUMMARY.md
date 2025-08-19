@@ -1,3 +1,11 @@
+## [2025-08-19] Project Cleanup Summary
+
+- All output files moved to `data/` folder
+- Removed unused and legacy files from main folder
+- Deleted redundant README files from subfolders
+- Cleaned up __pycache__ folders
+- Updated documentation for GitHub readiness
+- Ensured all scripts and modules are in correct folders
 pokitpal-competitive-scraper/
 ├── README.md                          # Project overview and features
 ├── HOW_TO_RUN.md                      # Step-by-step usage guide

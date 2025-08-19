@@ -1,25 +1,36 @@
-pokitpal-competitive-scraper/
+## AI-Enhanced Cashback Scraper
+
+### Project Structure
+
+```
+├── archive/                # Old docs, legacy files
+├── config/                 # Configuration files
+├── data/                   # All output CSV/JSON files
+├── examples/               # Example scripts and demos
+├── logs/                   # Log files
+├── services/               # Retailer scraping and Google Trends logic
 ├── src/
-│   ├── scrapers/
-│   │   ├── token_optimized_scraper_v2.py  # Main intelligence scraper
-│   │   └── __init__.py
-│   └── ai_agents/                         # AI enhancement modules
-├── data/                                  # Output files (CSV/Excel)
-├── examples/                              # Demo scripts
-├── tests/                                 # Environment tests
-├── config/                                # Configuration files
-├── logs/                                  # Scraper logs
-├── main.py                                # Main entry point
-└── requirements.txt                       # Dependencies
-scraper = TokenOptimizedAIScraper()
+│   ├── ai_agents/          # AI agent logic
+│   └── scrapers/           # Scraper modules
+├── tests/                  # Unit tests
+├── .env.example            # Environment variable template
+├── requirements.txt        # Python dependencies
+├── main.py                 # Main entry point
+├── run_scraper.py          # Run script
+├── README.md               # Project documentation
+├── CHANGELOG.md            # Changelog
+├── HOW_TO_RUN.md           # How to run instructions
+├── LICENSE                 # License
+```
 
 
-# Pokitpal Competitive Intelligence Scraper
 
-AI-enhanced scraper for competitive intelligence analysis of cashback platforms. Built specifically for Pokitpal to analyze competitors like ShopBack and CashRewards.
+# AI-Enhanced Competitive Intelligence Scraper
+
+AI-powered competitive intelligence analysis for cashback platforms. Dynamically scrapes, ranks, and analyzes competitors like ShopBack and Cashrewards using Google Trends and advanced business logic.
 
 ---
-**Author:** jekportillano-da
+**Author:** John Jerick Portillano
 ---
 
 ## 🎯 Features
@@ -29,6 +40,7 @@ AI-enhanced scraper for competitive intelligence analysis of cashback platforms.
 - **Cost Control**: Token budget management and optimization
 - **Excel-Ready Output**: CSV and Excel files for business analysis
 - **Smart Content Optimization**: Minimizes API costs while maximizing insights
+
 
 ## 🚀 Quick Start
 
@@ -74,27 +86,10 @@ AI-enhanced scraper for competitive intelligence analysis of cashback platforms.
 - Partnership vs competition strategies
 - Excel file with multiple analysis sheets
 
+
 ## Project Structure
 
-```
-project-root/
-├── src/
-│   ├── scrapers/
-│   └── ai_agents/
-├── data/
-│   └── README.md
-├── examples/
-├── tests/
-├── config/
-├── logs/ (empty or .gitkeep)
-├── main.py
-├── run_scraper.py
-├── requirements.txt
-├── README.md
-├── LICENSE
-├── .env.example
-└── ...other docs
-```
+See above for the latest folder layout. All output files are now saved in the `data/` folder. Legacy and unused files are archived in `archive/`.
 
 ## Competitive Intelligence Output
 
@@ -198,10 +193,12 @@ OPENAI_API_KEY=your_openai_api_key_here
 - Modify analysis depth in scraper configuration
 - Customize competitive analysis prompts
 
+
 ## Output Files
 
 ### CSV Files (Excel-ready)
 - `data/competitors_standard_YYYYMMDD_HHMMSS.csv`
+- `data/top_retailers.csv` (Google Trends)
 - Clean columns for business analysis
 - Strategic recommendations included
 
@@ -222,6 +219,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 This project is licensed under the MIT License - see LICENSE file for details.
 
+
 ## Support
 
 - Environment Issues: Run `python tests/test_environment.py`
@@ -230,4 +228,4 @@ This project is licensed under the MIT License - see LICENSE file for details.
 
 ---
 
-Built for Pokitpal's competitive intelligence needs.
+Built for competitive intelligence and business analysis.

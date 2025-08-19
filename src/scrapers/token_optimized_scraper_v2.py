@@ -598,7 +598,7 @@ Return detailed competitive analysis JSON:
         
         return None
     
-    def scrape_with_intelligence_level(self, site_name, intelligence_level="standard", model_name="gpt-3.5-turbo", max_pages=10, token_budget=None):
+    def scrape_with_intelligence_level(self, site_name, intelligence_level="standard", model_name="gpt-3.5-turbo", max_pages=10, token_budget=None, retailer_list=None):
         """Scrape with specified intelligence level, model, and budget control"""
         
         # Get cost estimate for the level+model combination
@@ -629,28 +629,43 @@ Return detailed competitive analysis JSON:
             self.logger.info(f"Fetching sitemap: {sitemap_url}")
             response = self.session.get(sitemap_url, timeout=30)
             response.raise_for_status()
-            
+
             soup = BeautifulSoup(response.content, 'xml')
             urls = [loc.get_text() for loc in soup.find_all('loc')]
-            
+
             # Filter for store/merchant pages
             store_urls = [url for url in urls if '/store/' in url or any(keyword in url.lower() for keyword in ['shop', 'merchant', 'brand'])]
-            
+
             self.logger.info(f"Found {len(urls)} URLs, {len(store_urls)} store URLs")
-            
-            # Use all available URLs - prioritize store URLs but include all for backup
-            # This ensures we can continue until target is reached regardless of errors
-            all_candidate_urls = store_urls + [url for url in urls if url not in store_urls]
-            
+
+            # If retailer_list is provided, filter store_urls to only those matching retailer names
+            if retailer_list:
+                print(f"[DEBUG] Target retailer_list: {retailer_list}")
+                from services.retailer_matcher import match_retailer
+                url_retailer_names = [url.split('/store/')[-1].replace('-', ' ').replace('_', ' ').split('/')[0] for url in store_urls]
+                print(f"[DEBUG] Extracted url_retailer_names: {url_retailer_names}")
+                matches = match_retailer(retailer_list, url_retailer_names, cutoff=0.6)
+                print(f"[DEBUG] Fuzzy matches: {matches}")
+                matched_urls = [url for url, name in zip(store_urls, url_retailer_names) if name in matches.values()]
+                self.logger.info(f"Filtered to {len(matched_urls)} URLs matching top retailers")
+                if not matched_urls:
+                    print("[DEBUG] No matched URLs found for top retailers. Falling back to all store URLs.")
+                    all_candidate_urls = store_urls
+                else:
+                    all_candidate_urls = matched_urls
+            else:
+                # Use all available URLs - prioritize store URLs but include all for backup
+                all_candidate_urls = store_urls + [url for url in urls if url not in store_urls]
+
             # First pass: filter out obviously bad URLs
             filtered_urls = [url for url in all_candidate_urls if not self.should_skip_url(url)]
             self.logger.info(f"📋 After pattern filtering: {len(filtered_urls)} candidate URLs")
-            
+
             # Second pass: validate URLs are actually accessible
             selected_urls = self.validate_url_batch(filtered_urls)
-            
+
             self.logger.info(f"🎯 Ready to scrape {len(selected_urls)} validated URLs (will continue until {max_pages} successful results)")
-            
+
         except Exception as e:
             self.logger.error(f"Error fetching sitemap: {e}")
             return []
@@ -747,40 +762,37 @@ Return detailed competitive analysis JSON:
             if stats['failed_extractions'] > 0:
                 self.logger.info(f"   ❌ Failed extractions: {stats['failed_extractions']}")
     
-    def save_intelligence_results(self, results, filename_base, intelligence_level):
-        """Save results with intelligence level information in appropriate formats"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        if intelligence_level == "basic":
-            # Simple CSV for basic results
-            csv_file = f"data/{filename_base}_{intelligence_level}_{timestamp}.csv"
+    def save_intelligence_results(self, results, site_name, intelligence_level, retailer_scores=None):
+        """Save results to CSV or JSON based on intelligence level"""
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        data_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data')
+        os.makedirs(data_dir, exist_ok=True)
+        if intelligence_level == "comprehensive":
+            csv_file = os.path.join(data_dir, f"{site_name}_comprehensive_{timestamp}.csv")
+            json_file = os.path.join(data_dir, f"{site_name}_comprehensive_{timestamp}.json")
             with open(csv_file, 'w', newline='', encoding='utf-8') as f:
-                if results:
-                    fieldnames = ['merchant', 'cashback_offer', 'competitive_threat', 'confidence', 'method', 'tokens_used', 'cost', 'url', 'scraped_at']
-                    writer = csv.DictWriter(f, fieldnames=fieldnames)
-                    writer.writeheader()
-                    writer.writerows(results)
-        
-        elif intelligence_level == "standard":
-            # Enhanced CSV for standard results
-            csv_file = f"data/{filename_base}_{intelligence_level}_{timestamp}.csv"
-            with open(csv_file, 'w', newline='', encoding='utf-8') as f:
-                if results:
-                    fieldnames = ['merchant', 'cashback_offer', 'offer_type', 'competitive_threat_level', 'market_position', 'pokitpal_opportunity', 
-                                'ease_of_use', 'mobile_optimized', 'pokitpal_strategic_recommendations', 
-                                'confidence', 'method', 'tokens_used', 'cost', 'url', 'scraped_at']
-                    writer = csv.DictWriter(f, fieldnames=fieldnames)
-                    writer.writeheader()
-                    for result in results:
-                        # Convert recommendations list to string
-                        result_copy = result.copy()
-                        if 'pokitpal_strategic_recommendations' in result_copy and isinstance(result_copy['pokitpal_strategic_recommendations'], list):
-                            result_copy['pokitpal_strategic_recommendations'] = '; '.join(result_copy['pokitpal_strategic_recommendations'])
-                        writer.writerow(result_copy)
+                fieldnames = [
+                    'merchant_name', 'cashback_offer', 'offer_type',
+                    'market_position', 'unique_selling_points', 'competitive_advantages', 'weaknesses_pokitpal_can_exploit',
+                    'offer_attractiveness', 'offer_complexity', 'pokitpal_differentiation_opportunity',
+                    'special_conditions', 'exclusions',
+                    'ease_of_use', 'signup_process', 'payment_methods', 'mobile_optimized', 'pokitpal_ux_advantages',
+                    'threat_to_pokitpal', 'partnership_opportunity', 'market_share_vulnerability', 'customer_acquisition_difficulty',
+                    'pokitpal_recommendation_1', 'pokitpal_recommendation_2', 'pokitpal_recommendation_3',
+                    'overall_threat_level', 'pokitpal_response_priority', 'recommended_pokitpal_strategy',
+                    'extraction_confidence', 'data_completeness', 'analysis_reliability',
+                    'tokens_used', 'cost', 'url', 'scraped_at'
+                ]
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                for result in results:
+                    writer.writerow(self.flatten_comprehensive_competitive_data(result))
         
         else:  # comprehensive - NOW SAVES AS CSV TOO!
             # Create comprehensive CSV with flattened competitive intelligence data
-            csv_file = f"data/{filename_base}_{intelligence_level}_{timestamp}.csv"
+            data_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data')
+            os.makedirs(data_dir, exist_ok=True)
+            csv_file = os.path.join(data_dir, f"{site_name}_{intelligence_level}_{timestamp}.csv")
             with open(csv_file, 'w', newline='', encoding='utf-8') as f:
                 if results:
                     # Define comprehensive fieldnames for competitive intelligence
@@ -805,7 +817,6 @@ Return detailed competitive analysis JSON:
                         writer.writerow(flattened)
             
             # Also save JSON for backup/detailed analysis
-            json_file = f"data/{filename_base}_{intelligence_level}_{timestamp}.json"
             with open(json_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, indent=2, ensure_ascii=False)
         
@@ -822,17 +833,34 @@ Return detailed competitive analysis JSON:
                 "competitive_analysis_for": "Pokitpal"
             }
         }
-        
-        summary_file = f"data/{filename_base}_{intelligence_level}_summary_{timestamp}.json"
+        summary_file = os.path.join(data_dir, f"{site_name}_{intelligence_level}_summary_{timestamp}.json")
         with open(summary_file, 'w', encoding='utf-8') as f:
             json.dump(cost_summary, f, indent=2)
-        
+
         self.logger.info(f"💾 Results saved:")
         if intelligence_level == "comprehensive":
             self.logger.info(f"   📊 CSV Data: {csv_file}")
             self.logger.info(f"   📄 JSON Backup: {json_file}")
         else:
-            self.logger.info(f"   📊 Data: {csv_file}")
+            csv_file = os.path.join(data_dir, f"{site_name}_{intelligence_level}_{timestamp}.csv")
+            json_file = os.path.join(data_dir, f"{site_name}_{intelligence_level}_{timestamp}.json")
+            with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+                fieldnames = [
+                    'merchant_name', 'cashback_offer', 'offer_type',
+                    'market_position', 'unique_selling_points', 'competitive_advantages', 'weaknesses_pokitpal_can_exploit',
+                    'offer_attractiveness', 'offer_complexity', 'pokitpal_differentiation_opportunity',
+                    'special_conditions', 'exclusions',
+                    'ease_of_use', 'signup_process', 'payment_methods', 'mobile_optimized', 'pokitpal_ux_advantages',
+                    'threat_to_pokitpal', 'partnership_opportunity', 'market_share_vulnerability', 'customer_acquisition_difficulty',
+                    'pokitpal_recommendation_1', 'pokitpal_recommendation_2', 'pokitpal_recommendation_3',
+                    'overall_threat_level', 'pokitpal_response_priority', 'recommended_pokitpal_strategy',
+                    'extraction_confidence', 'data_completeness', 'analysis_reliability',
+                    'tokens_used', 'cost', 'url', 'scraped_at'
+                ]
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                for result in results:
+                    writer.writerow(self.flatten_comprehensive_competitive_data(result))
         self.logger.info(f"   📈 Summary: {summary_file}")
         self.logger.info(f"   💰 Total cost: ${self.token_costs:.4f}")
     

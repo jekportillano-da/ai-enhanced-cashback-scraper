@@ -168,9 +168,11 @@ python examples/competitive_intelligence_demo.py
 - **Configuration**: `.env` file
 - **Settings**: `main.py` for budget/page limits
 
+
 ### Output:
 - **CSV Results**: `data/competitors_standard_YYYYMMDD_HHMMSS.csv`
 - **Excel Results**: `data/competitors_comprehensive_YYYYMMDD_HHMMSS.xlsx`
+- **Google Trends**: `data/top_retailers.csv`
 - **Logs**: `logs/token_scraper.log`
 
 ## 🎯 Best Practices
@@ -202,5 +204,6 @@ python examples/competitive_intelligence_demo.py
 - Create dashboards from CSV/Excel output
 
 ---
+
 
 Need help? Check the logs in `logs/` directory or run the test suite!

@@ -6,9 +6,14 @@ from ai_agents import BaseAIAgent, ScrapingContext, ExtractionResult
 from typing import Optional, Dict, List
 import re
 from bs4 import BeautifulSoup, Tag
-import requests
-from transformers import pipeline
-import spacy
+try:
+    import requests
+    from transformers import pipeline
+    import spacy
+except ImportError:
+    requests = None
+    pipeline = None
+    spacy = None
 
 
 class VisionBasedAgent(BaseAIAgent):

@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Data and log outputs
+data/
+logs/
+*.csv
+*.json
 *.so
 .Python
 build/

@@ -1,17 +1,11 @@
 import requests
 import csv
-import json
 import time
 import logging
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional, Tuple
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
-from pathlib import Path
-import asyncio
-import aiohttp
-from concurrent.futures import ThreadPoolExecutor
-import pandas as pd
 
 
 @dataclass

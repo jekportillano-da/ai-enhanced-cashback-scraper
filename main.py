@@ -45,9 +45,9 @@ def main():
 def run_production_scraper():
     """Run the production scraper"""
     print("🚀 Starting Production AI Scraper...")
-    from scrapers.production_scraper import SimpleAIScraper
-    
-    scraper = SimpleAIScraper()
+    # Production scraper not implemented; placeholder for future
+    print("Production scraper is not available in this version.")
+    return
     
     # Run both sites
     print("\n📊 Scraping ShopBack...")
@@ -76,47 +76,7 @@ def run_optimized_scraper():
     scraper_path = project_root / 'src' / 'scrapers'
     sys.path.insert(0, str(scraper_path))
     
-    try:
-        from token_optimized_scraper_v2 import TokenOptimizedAIScraper
-    except ImportError as e:
-        print(f"❌ Could not import intelligence levels scraper: {e}")
-        print("💡 Trying alternative approach...")
-        
-        # Alternative: use the working scraper from earlier test
-        from pathlib import Path
-        import subprocess
-        
-        print("\n🧠 Select Intelligence Level:")
-        print("1. 🔸 Basic - Simple extraction")
-        print("2. 🔹 Standard - Business insights") 
-        print("3. 🔷 Comprehensive - Full analysis")
-        
-        intelligence_choice = input("Enter intelligence level (1-3): ").strip()
-        intelligence_levels = {"1": "basic", "2": "standard", "3": "comprehensive"}
-        intelligence_level = intelligence_levels.get(intelligence_choice, "standard")
-        
-        print("\n🤖 Select AI Model:")
-        print("1. GPT-3.5 Turbo (Fast & Economical)")
-        print("2. GPT-4o (Superior Quality)")
-        
-        model_choice = input("Enter model choice (1-2): ").strip()
-        models = {"1": "gpt-3.5-turbo", "2": "gpt-4o"}
-        selected_model = models.get(model_choice, "gpt-3.5-turbo")
-        
-        print(f"\n🎯 Selected: {intelligence_level.title()} + {selected_model}")
-        print("🚀 Running intelligence levels scraper directly...")
-        
-        # Run the standalone scraper
-        scraper_file = project_root / 'src' / 'scrapers' / 'token_optimized_scraper_v2.py'
-        result = subprocess.run([sys.executable, str(scraper_file)], 
-                              capture_output=False, text=True, cwd=str(project_root))
-        
-        if result.returncode == 0:
-            print("✅ Scraping completed successfully!")
-        else:
-            print("❌ Scraping failed. Check the logs for details.")
-        return
-    
+    from src.scrapers.token_optimized_scraper_v2 import TokenOptimizedAIScraper
     scraper = TokenOptimizedAIScraper()
     
     # Intelligence level selection
@@ -216,16 +176,23 @@ def run_optimized_scraper():
     print(f"🎯 Intelligence Level: {intelligence_level.title()}")
     print(f"📄 Maximum Pages: {max_pages}")
     
+
+    # Fetch top retailers from Google Trends based on max_pages
+    print(f"\n🔎 Fetching top {max_pages} retailers from Google Trends...")
+    from services.google_trends_top_retailers import fetch_top_retailers
+    top_retailers = fetch_top_retailers(top_n=max_pages)
+    print(f"Top retailers for scraping: {top_retailers}")
+
     # Site selection
     print("\n🌐 Select site to scrape:")
     print("1. ShopBack only")
     print("2. CashRewards only") 
     print("3. Both sites")
-    
+
     site_choice = input("Enter choice (1-3): ").strip()
-    
+
     results = []
-    
+
     if site_choice in ["1", "3"]:
         print(f"\n📊 Scraping ShopBack with {intelligence_level} intelligence + {model_info['name']}...")
         shopback_results = scraper.scrape_with_intelligence_level(
@@ -233,49 +200,51 @@ def run_optimized_scraper():
             intelligence_level=intelligence_level,
             model_name=selected_model,
             max_pages=max_pages,
-            token_budget=budget//2 if budget and site_choice == "3" else budget
+            token_budget=budget//2 if budget and site_choice == "3" else budget,
+            retailer_list=top_retailers
         )
         if shopback_results:
             scraper.save_intelligence_results(shopback_results, "shopback", intelligence_level)
             results.extend(shopback_results)
-    
+
     if site_choice in ["2", "3"]:
         # Reset token tracking if doing both sites
         if site_choice == "3":
             scraper.total_tokens_used = 0
             scraper.token_costs = 0.0
-        
+
         print(f"\n📊 Scraping CashRewards with {intelligence_level} intelligence + {model_info['name']}...")
         cashrewards_results = scraper.scrape_with_intelligence_level(
             site_name="cashrewards",
             intelligence_level=intelligence_level,
             model_name=selected_model,
             max_pages=max_pages,
-            token_budget=budget//2 if budget and site_choice == "3" else budget
+            token_budget=budget//2 if budget and site_choice == "3" else budget,
+            retailer_list=top_retailers
         )
         if cashrewards_results:
             scraper.save_intelligence_results(cashrewards_results, "cashrewards", intelligence_level)
             results.extend(cashrewards_results)
-    
+
     # Summary
     print(f"\n✅ Intelligent scraping complete!")
     print(f"🧠 Intelligence Level: {intelligence_level.title()}")
     print(f"🤖 AI Model: {model_info['name']}")
     print(f"📊 Total results: {len(results)}")
     print(f"💰 Total cost: ${scraper.token_costs:.4f} ({scraper.total_tokens_used} tokens)")
-    
+
     if intelligence_level == "basic":
         print(f"📄 Results saved as CSV files")
     elif intelligence_level == "standard": 
         print(f"📄 Results saved as enhanced CSV files")
     else:
         print(f"📄 Results saved as comprehensive JSON files")
-    
+
     # Show sample insights based on intelligence level
     if results:
         sample = results[0]
         print(f"\n💡 Sample insights for {sample.get('merchant', sample.get('basic_info', {}).get('merchant_name', 'merchant'))}):")
-        
+
         if intelligence_level == "basic":
             print(f"   💰 Cashback: {sample.get('cashback_offer', 'N/A')}")
             print(f"   🎯 Confidence: {sample.get('confidence', 'N/A')}")
@@ -332,9 +301,7 @@ def run_legacy_optimized_scraper():
     """Run the legacy token-optimized scraper"""
     print("🚀 Starting Legacy Token-Optimized AI Scraper...")
     try:
-        from scrapers.token_optimized_scraper import TokenOptimizedAIScraper
         
-        scraper = TokenOptimizedAIScraper()
         
         # Interactive budget selection
         print("\n💰 Select token budget:")
@@ -352,22 +319,6 @@ def run_legacy_optimized_scraper():
         else:
             print("📊 No budget limit set")
         
-        # Run both sites with budget
-        print("\n📊 Scraping ShopBack...")
-        shopback_results = scraper.scrape_site("shopback", max_pages=15, token_budget=budget//2 if budget else None)
-        scraper.save_results(shopback_results, "legacy_shopback")
-        
-        print("\n📊 Scraping CashRewards...")
-        cashrewards_results = scraper.scrape_site("cashrewards", max_pages=15, token_budget=budget//2 if budget else None)
-        scraper.save_results(cashrewards_results, "legacy_cashrewards")
-        
-        # Combined results
-        all_results = shopback_results + cashrewards_results
-        scraper.save_results(all_results, "legacy_combined")
-        
-        print(f"\n✅ Legacy scraping complete! Found {len(all_results)} offers")
-        print(f"💰 Total cost: ${scraper.token_costs:.4f} ({scraper.total_tokens_used} tokens)")
-        print(f"📁 Results saved to legacy_*.csv and legacy_*.json")
         
     except ImportError:
         print("❌ Legacy scraper not available. Use the Intelligence Levels scraper instead!")

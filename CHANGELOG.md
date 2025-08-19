@@ -1,3 +1,13 @@
+## [2025-08-19] Cleanup & Documentation Update
+
+- Moved all output files to `data/` folder
+- Removed legacy and unused files from main folder
+- Deleted redundant README files from subfolders
+- Cleaned up __pycache__ folders
+- Updated main README.md for GitHub readiness
+- Updated requirements.txt for dependencies
+- Ensured all scripts and modules are in correct folders
+
 # Changelog
 
 All notable changes to the AI-Enhanced Cashback Scraper will be documented in this file.
